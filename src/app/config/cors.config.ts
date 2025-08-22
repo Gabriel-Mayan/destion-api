@@ -2,7 +2,7 @@ import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.int
 import { ConfigService } from '@nestjs/config';
 
 export const corsConfig = (configService: ConfigService): CorsOptions => {
-  const mode = configService.get<string>('MODE');
+  const mode = configService.get<string>('NODE_ENV');
   const whitelist = [''];
 
   return {

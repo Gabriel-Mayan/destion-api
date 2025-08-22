@@ -8,7 +8,7 @@ export class AppController {
 
   @Get('ping')
   async ping(@Req() request: Request) {
-    this.appService.isValidPingRequest(request);
+    // this.appService.isValidPingRequest(request);
 
     return { message: 'Ping Ok' };
   }

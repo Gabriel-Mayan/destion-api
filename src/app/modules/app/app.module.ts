@@ -12,14 +12,18 @@ import { SentryModule } from '@integrations/sentry/sentry.module';
 import { AppService } from './app.service';
 import { AppController } from './app.controller';
 import { MiddlewaresModule } from '@infrastructure/middlewares/middlewares.module';
+import { RedisModule } from '@infrastructure/redis/redis.module';
+import { SocketModule } from '@infrastructure/socket/socket.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({ imports: [ConfigModule], inject: [ConfigService], useFactory: databaseConfig }),
+    MiddlewaresModule,
+    RedisModule,
+    SocketModule,
     PingModule,
     EmailModule,
-    MiddlewaresModule,
     SentryModule,
   ],
   providers: [AppService],

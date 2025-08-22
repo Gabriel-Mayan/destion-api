@@ -30,7 +30,7 @@ export class EmailService {
 
     return await this.transporter.sendMail({
       to,
-      from: `"Nest Test" <${this.configService.get<string>('EMAIL_DEFAULT_RECIVER_PROPOSE')}>`,
+      from: `"Nest Test" <${this.configService.get<string>('EMAIL_DEFAULT_RECIVER')}>`,
       subject: 'Test Email with NestJS',
       html,
     });

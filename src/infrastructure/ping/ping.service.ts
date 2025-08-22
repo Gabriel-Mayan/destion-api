@@ -11,7 +11,7 @@ export class PingService implements OnApplicationBootstrap {
 
   constructor(private config: ConfigService, private http: HttpService) {
     this.logger = new Logger(PingService.name);
-    this.host = this.config.get<string>('RENDER_HOST')!;
+    this.host = this.config.get<string>('RENDER_HOST')! === "localhost" ? "http://localhost:8080" : this.config.get<string>('RENDER_HOST')!;
   }
 
   private sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -27,7 +27,7 @@ export class PingService implements OnApplicationBootstrap {
     if (!status) {
       this.logger.warn('Initial ping failed, starting retry...');
 
-      await this.retryPing(() => this.pingRender(), 'PingRender');
+      await this.retryPing(() => this.pingRender());
     }
   }
 
@@ -42,12 +42,12 @@ export class PingService implements OnApplicationBootstrap {
 
       return true;
     } catch (error) {
-      this.logger.error('[pingRender] Error pinging the API:', error);
+      this.logger.error('Error pinging the API');
       return false;
     }
   }
 
-  private async retryPing(fn: () => Promise<boolean>, name: string, delay = 5000, maxAttempts = 10): Promise<void> {
+  private async retryPing(fn: () => Promise<boolean>, delay = 5000, maxAttempts = 10): Promise<void> {
     let attempts = 0;
 
     while (attempts < maxAttempts) {
@@ -55,16 +55,16 @@ export class PingService implements OnApplicationBootstrap {
       const success = await fn();
 
       if (success) {
-        this.logger.log(`[${name}] Success after ${attempts} attempt(s).`);
+        this.logger.log(`Success after ${attempts} attempt(s).`);
         return;
       }
 
-      this.logger.warn(`[${name}] Attempt ${attempts} failed. Retrying in ${delay}ms...`);
+      this.logger.warn(`Attempt ${attempts} failed. Retrying in ${delay}ms...`);
 
       await this.sleep(delay);
     }
 
-    this.logger.error(`[${name}] Failed after ${attempts} attempts. No further retries.`);
+    this.logger.error(`Failed after ${attempts} attempts. No further retries.`);
   }
 
   @Cron(CronExpression.EVERY_5_MINUTES)
@@ -75,7 +75,7 @@ export class PingService implements OnApplicationBootstrap {
     if (!status) {
       this.logger.warn('Ping failed, starting retry...');
 
-      await this.retryPing(() => this.pingRender(), 'PingRender');
+      await this.retryPing(() => this.pingRender());
     }
   }
 }
