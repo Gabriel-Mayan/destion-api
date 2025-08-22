@@ -1,19 +1,16 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Redis } from 'ioredis';
 import { ConfigService } from '@nestjs/config';
-import { Redis as RedisOri } from 'ioredis';  // 🔹 TODO Eventualmente renomear
-import Redis from 'ioredis-mock'; // 🔹 TODO Eventualmente remover
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 
 @Injectable()
-export class RedisService implements OnModuleInit, OnModuleDestroy {
-  private client: RedisOri;
-  private subscriber: RedisOri;
+export class RedisService implements OnModuleDestroy {
+  private client: Redis;
+  private subscriber: Redis;
   private readonly logger: Logger;
 
   constructor(private config: ConfigService) {
     this.logger = new Logger(RedisService.name);
-  }
 
-  async onModuleInit() {
     this.client = new Redis({
       host: this.config.get<string>('REDIS_HOST'),
       port: Number(this.config.get<string>('REDIS_PORT')),

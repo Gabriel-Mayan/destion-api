@@ -11,7 +11,7 @@ export class PingService implements OnApplicationBootstrap {
 
   constructor(private config: ConfigService, private http: HttpService) {
     this.logger = new Logger(PingService.name);
-    this.host = this.config.get<string>('RENDER_HOST')! === "localhost" ? "http://localhost:8080" : this.config.get<string>('RENDER_HOST')!;
+    this.host = this.config.get<string>('RENDER_HOST')!;
   }
 
   private sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

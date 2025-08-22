@@ -1,0 +1,53 @@
+version: '3.8'
+
+networks:
+  destion:
+    driver: bridge
+
+volumes:
+  db_data:
+  redis_data:
+
+services:
+  db:
+    container_name: destion-db
+    image: postgres:15
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: destion
+      POSTGRES_USERNAME: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - destion
+    restart: unless-stopped
+
+  redis:
+    container_name: destion-redis
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - destion
+    restart: unless-stopped
+
+  api:
+    container_name: destion-api
+    build:
+      context: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    networks:
+      - destion
+    restart: unless-stopped
