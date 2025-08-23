@@ -1,14 +1,15 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { Message } from './message.entity';
+import { JwtService } from '@nestjs/jwt';
+import { AuthGuard } from '@shared/guards/auth.guard';
+
 import { MessageService } from './message.service';
 import { MessageController } from './message.controller';
 import { MessageRepository } from './message.repository';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Message])],
   controllers: [MessageController],
-  providers: [MessageService, MessageRepository],
+  providers: [MessageService, MessageRepository, JwtService, AuthGuard],
+  exports: [MessageService],
 })
-export class MessageModule {}
+export class MessageModule { }

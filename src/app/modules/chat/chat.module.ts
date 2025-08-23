@@ -1,14 +1,16 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-
-import { Chat } from './chat.entity';
 import { ChatService } from './chat.service';
 import { ChatController } from './chat.controller';
 import { ChatRepository } from './chat.repository';
+import { UserRepository } from '../user/user.repository';
+
+import { JwtService } from '@nestjs/jwt';
+import { AuthGuard } from '@shared/guards/auth.guard';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Chat])],
   controllers: [ChatController],
-  providers: [ChatService, ChatRepository],
+  providers: [ChatService, ChatRepository, UserRepository, JwtService, AuthGuard],
+  exports: [ChatService, ChatRepository],
 })
+
 export class ChatModule {}

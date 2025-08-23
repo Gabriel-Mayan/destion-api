@@ -1,8 +1,7 @@
+import { JwtService } from '@nestjs/jwt';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 
 import { UserRepository } from '@modules/user/user.repository';
-
-import { TokenService } from '@shared/token/token.service';
 import { CryptoService } from '@shared/crypto/crypto.service';
 
 import { LoginDto } from './dto/login.dto';
@@ -12,10 +11,10 @@ import { SocialLoginDto } from './dto/social-login.dto';
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly tokenService: TokenService,
+    private readonly jwtService: JwtService,
     private readonly cryptoService: CryptoService,
     private readonly userRepository: UserRepository,
-  ) { }
+  ) {}
 
   async register(dto: RegisterDto) {
     const existingUser = await this.userRepository.findOne({ where: { email: dto.email } });
@@ -29,7 +28,7 @@ export class AuthService {
 
     await this.userRepository.save(user);
 
-    const token = await this.tokenService.generateToken({ sub: user.id, email: user.email });
+    const token = await this.jwtService.signAsync({ sub: user.id, email: user.email });
 
     return { user, token };
   }
@@ -47,7 +46,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     };
 
-    const token = await this.tokenService.generateToken({ sub: user.id, email: user.email });
+    const token = await this.jwtService.signAsync({ sub: user.id, email: user.email });
 
     return { user, token };
   }
@@ -65,7 +64,7 @@ export class AuthService {
       await this.userRepository.save(user);
     }
 
-    const token = await this.tokenService.generateToken({ sub: user.id, email: user.email });
+    const token = await this.jwtService.signAsync({ sub: user.id, email: user.email });
 
     return { user, token };
   }
@@ -77,7 +76,7 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    const token = await this.tokenService.generateToken({ sub: user.id, email: user.email });
+    const token = await this.jwtService.signAsync({ sub: user.id, email: user.email });
 
     return { user, token };
   }

@@ -10,7 +10,6 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "generate:module": "node tools/generators/generate-module.js",
     "draw": "node tools/drawers/draw-structure.js",
-    "dev": "ts-node-dev --respawn --transpile-only src/main.ts",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",

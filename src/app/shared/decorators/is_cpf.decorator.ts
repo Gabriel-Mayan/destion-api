@@ -1,6 +1,6 @@
 import { registerDecorator, ValidationOptions, ValidationArguments } from 'class-validator';
 
-import { DocumentValidatorService } from "@shared/validators/document-validator.service";
+import { DocumentValidatorService } from "@shared/decorators/document-validator.service";
 
 export function IsCpf(validationOptions?: ValidationOptions) {
   return function (object: object, propertyName: string) {
