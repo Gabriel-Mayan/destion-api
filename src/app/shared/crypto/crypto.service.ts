@@ -9,7 +9,10 @@ export class CryptoService {
     return await hash(password, this.saltRounds);
   }
 
-  async compare(password: string, hashed: string) {
+  async compare(password: string, hashed?: string) {
+    if(!hashed)
+      return false;
+
     return await compare(password, hashed);
   }
 }
