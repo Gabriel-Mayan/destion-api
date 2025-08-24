@@ -9,7 +9,7 @@ import { UserRepository } from './user.repository';
 
 @Module({
   controllers: [UserController],
-  providers: [UserService, UserRepository, JwtService, AuthGuard],
+  providers: [UserService, UserRepository, AuthGuard],
   exports: [UserService, UserRepository],
 })
 

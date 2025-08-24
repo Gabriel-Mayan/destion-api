@@ -1,12 +1,17 @@
 import { JwtService } from '@nestjs/jwt';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 
 import { UserRepository } from '@modules/user/user.repository';
+
+import { RecoveryPasswordService } from '@modules/recovery-password/recovery-password.service';
+
 import { CryptoService } from '@shared/crypto/crypto.service';
 
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { SocialLoginDto } from './dto/social-login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { RequestRecoveryDto } from './dto/request-recovery.dto';
 
 @Injectable()
 export class AuthService {
@@ -14,7 +19,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly cryptoService: CryptoService,
     private readonly userRepository: UserRepository,
-  ) {}
+    private readonly recoveryService: RecoveryPasswordService,
+  ) { }
 
   async register(dto: RegisterDto) {
     const existingUser = await this.userRepository.findOne({ where: { email: dto.email } });
@@ -69,15 +75,28 @@ export class AuthService {
     return { user, token };
   }
 
-  async refreshToken(userId: string) {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+  async requestPasswordRecovery(dto: RequestRecoveryDto) {
+    const user = await this.userRepository.findOne({ where: { email: dto.email } });
 
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new NotFoundException('User not found');
     }
 
-    const token = await this.jwtService.signAsync({ sub: user.id, email: user.email });
+    const recoveryToken = await this.recoveryService.createToken(user);
 
-    return { user, token };
+    return { recoveryToken: recoveryToken.token };
+  }
+
+  async changePassword(dto: ChangePasswordDto) {
+    const recovery = await this.recoveryService.validateToken(dto.recoveryId);
+
+    const hashedPassword = await this.cryptoService.encrypt(dto.password);
+    
+    recovery.user.password = hashedPassword;
+    
+    await this.userRepository.save(recovery.user);
+    await this.recoveryService.markAsUsed(dto.recoveryId);
+
+    return { message: 'Password changed successfully' };
   }
 }

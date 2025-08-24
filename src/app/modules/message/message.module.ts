@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 
-import { JwtService } from '@nestjs/jwt';
 import { AuthGuard } from '@shared/guards/auth.guard';
 
 import { MessageService } from './message.service';
@@ -9,7 +8,7 @@ import { MessageRepository } from './message.repository';
 
 @Module({
   controllers: [MessageController],
-  providers: [MessageService, MessageRepository, JwtService, AuthGuard],
+  providers: [MessageService, MessageRepository, AuthGuard],
   exports: [MessageService],
 })
 export class MessageModule { }

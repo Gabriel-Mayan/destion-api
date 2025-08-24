@@ -6,6 +6,8 @@ import { ConfigService } from '@nestjs/config';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { createTransport, Transporter } from 'nodemailer';
 
+import { User } from '@modules/user/user.entity';
+
 import { config } from './email.config';
 import { ISendMail } from './email.interface';
 
@@ -25,18 +27,7 @@ export class EmailService {
     return compiled(data);
   }
 
-  async sendTestEmail(to: string, name: string) {
-    const html = this.compileTemplate('test-email.hbs', { name });
-
-    return await this.transporter.sendMail({
-      to,
-      from: `"Nest Test" <${this.configService.get<string>('EMAIL_DEFAULT_RECIVER')}>`,
-      subject: 'Test Email with NestJS',
-      html,
-    });
-  }
-
-  async sendMail({ to, subject, template, context }: ISendMail) {
+  private async sendMail({ to, subject, template, context }: ISendMail) {
     const html = this.compileTemplate(template, context);
 
     return await this.transporter.sendMail({
@@ -44,6 +35,17 @@ export class EmailService {
       from: this.configService.get<string>('EMAIL_USER'),
       html,
       subject,
+    });
+  }
+
+  async sendRecoveryEmail(user: User, token: string, expiresAt: Date) {
+    const resetUrl = `${this.configService.get<string>('FRONTEND_URL')}/recovery/${token}`;
+
+    return this.sendMail({
+      to: user.email,
+      subject: 'Password Recovery',
+      template: 'recovery-password.hbs',
+      context: { name: user.name, resetUrl, expiresAt },
     });
   }
 }
