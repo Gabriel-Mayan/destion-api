@@ -57,7 +57,6 @@ export class RedisService implements OnModuleDestroy {
     });
   }
 
-  // helpers para sets (usuarios em salas)
   async addToSet(key: string, member: string): Promise<void> {
     await this.client.sadd(key, member);
   }

@@ -5,12 +5,13 @@ import { AuthenticatedRequest } from '@shared/interfaces/authenticated-request.i
 
 import { ChatService } from './chat.service';
 import { CreateChatDto } from './dto/create-chat.dto';
+import { SocketGateway } from '@infrastructure/socket/socket.gateway';
 
 @Controller('chats')
 @UseGuards(AuthGuard)
 export class ChatController {
-  constructor(private readonly chatService: ChatService) {}
-  
+  constructor(private readonly chatService: ChatService, private readonly socketGateway: SocketGateway) { }
+
   @Post()
   create(@Body() dto: CreateChatDto, @Req() req: AuthenticatedRequest) {
     dto.creatorId = req.user.id;
@@ -22,14 +23,17 @@ export class ChatController {
   async findMyChats(@Req() req: AuthenticatedRequest) {
     return await this.chatService.findChatByUserId(req.user.id);
   }
-  
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.chatService.findChatById(id);
-  }
-  
+
   @Post(':id/join')
   async joinChat(@Param('id') chatId: string, @Req() req: AuthenticatedRequest) {
-    return await this.chatService.joinChat(chatId, req.user);
+    const result = await this.chatService.joinChat(chatId, req.user);
+
+    const socket = this.socketGateway.server.sockets.sockets.get(`user:${req.user.id}`);
+
+    if (socket) {
+      this.socketGateway.addUserToRoom(socket, chatId);
+    }
+
+    return result;
   }
 }

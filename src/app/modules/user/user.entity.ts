@@ -25,6 +25,14 @@ export class User extends BaseEntity<User> {
   @OneToMany(() => Chat, (chat) => chat.creator)
   createdChats: Chat[];
   
+  @ManyToMany(() => Chat, (chat) => chat.participants)
+  @JoinTable({
+    name: 'user_chats',
+    joinColumn: { name: 'userId', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'chatId', referencedColumnName: 'id' },
+  })
+  chats: Chat[];
+
   @ManyToMany(() => User)
   @JoinTable({
     name: 'user_friends',

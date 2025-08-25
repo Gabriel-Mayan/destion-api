@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { RedisService } from '@infrastructure/redis/redis.service';
+import { User } from '@modules/user/user.entity';
 
 import { DateFnsService } from '@shared/datefns/datefns.service';
 
@@ -8,7 +8,6 @@ import { Chat } from './chat.entity';
 import { ChatRepository } from './chat.repository';
 import { UserRepository } from '../user/user.repository';
 import { CreateChatDto } from './dto/create-chat.dto';
-import { User } from '@modules/user/user.entity';
 
 @Injectable()
 export class ChatService {
@@ -16,15 +15,18 @@ export class ChatService {
     private readonly chatRepository: ChatRepository,
     private readonly userRepository: UserRepository,
     private readonly dateFnsService: DateFnsService,
-    private readonly redisService: RedisService,
-  ) {}
+  ) { }
 
-  private formatChatDetails({ entities, raw, userId }: { entities: Chat[]; raw: any[]; userId: string }) {
-    return entities.map((chat, index) => {
+  private async formatChatDetails({ entities, raw, userId }: { entities: Chat[]; raw: any[]; userId: string }) {
+    return await Promise.all(entities.map(async (chat, index) => {
       const rawData = raw[index];
 
+      const creator = { id: rawData.creator_id, name: rawData.creator_name, }
       const isCreator = chat.creator.id === userId;
+     
+      const participants= chat.participants.map((p) => ({ id: p.id, name: p.name }));
       const isParticipant = chat.participants.some((participant) => participant.id === userId);
+      const lastActivity = this.dateFnsService.formatRelativeTime(rawData.chat_last_activity || chat.createdAt);
 
       return {
         id: chat.id,
@@ -33,14 +35,12 @@ export class ChatService {
         description: chat.description,
         membersCount: chat.participants.length,
         isCreator,
+        participants,
         isParticipant,
-        lastActivity: this.dateFnsService.formatRelativeTime(rawData.chat_last_activity || chat.createdAt),
-        creator: {
-          id: rawData.creator_id,
-          name: rawData.creator_name,
-        },
+        creator,
+        lastActivity,
       };
-    });
+    }));
   }
 
   async createChat(dto: CreateChatDto): Promise<Chat> {
@@ -94,8 +94,6 @@ export class ChatService {
       await this.chatRepository.save(chat);
     }
 
-    await this.redisService.addToSet(`chat:${chat.id}:users`, user.id);
-
-    return { message: 'Joined successfully', chatId: chat.id };
+    return await this.findChatById(chatId);
   }
 }

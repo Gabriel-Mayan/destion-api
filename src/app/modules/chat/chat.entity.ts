@@ -19,8 +19,7 @@ export class Chat extends BaseEntity<Chat> {
   @Column({ default: true })
   isPublic: boolean;
 
-  @ManyToMany(() => User)
-  @JoinTable()
+  @ManyToMany(() => User, (user) => user.chats)
   participants: User[];
 
   @OneToMany(() => Message, (message) => message.chat)
