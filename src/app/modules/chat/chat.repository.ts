@@ -9,17 +9,29 @@ export class ChatRepository extends Repository<Chat> {
     super(Chat, dataSource.createEntityManager());
   }
 
-  getChatByUserId({ userId }: { userId: string }) {
-    return this.createQueryBuilder('chat')
-      .leftJoinAndSelect('chat.participants', 'user')
-      .where('user.id = :userId', { userId })
-      .getMany();
+  async getUserChatsByUserId({ userId }: { userId: string }) {
+    return await this.createQueryBuilder('chat')
+      .leftJoinAndSelect('chat.participants', 'participant')
+      .leftJoin('chat.messages', 'message')
+      .leftJoin('chat.creator', 'creator')
+      .addSelect('creator.id')
+      .addSelect('creator.name')
+      .addSelect(subQuery =>
+        subQuery
+          .select('MAX(message.createdAt)', 'lastActivity')
+          .from('message', 'message')
+          .where('message.chatId = chat.id'),
+        'chat_last_activity',
+      )
+      .where('participant.id = :userId OR creator.id = :userId OR chat.isPublic = true', { userId })
+      .getRawAndEntities();
   }
 
   getChatDetails({ chatId }: { chatId: string }) {
+    // TODO Corrigir essa query
     return this.findOne({
       where: { id: chatId },
-      relations: ['creator', 'participants', 'messages'],
+      relations: ['creator', 'participants', 'messages', 'messages.sender'],
     });
   }
 }

@@ -5,10 +5,12 @@ import { ChatRepository } from './chat.repository';
 import { UserRepository } from '../user/user.repository';
 
 import { AuthGuard } from '@shared/guards/auth.guard';
+import { DateFnsModule } from '@shared/datefns/datefns.module';
+import { DateFnsService } from '@shared/datefns/datefns.service';
 
 @Module({
   controllers: [ChatController],
-  providers: [ChatService, ChatRepository, UserRepository, AuthGuard],
+  providers: [DateFnsService, ChatService, ChatRepository, UserRepository, AuthGuard],
   exports: [ChatService, ChatRepository],
 })
 

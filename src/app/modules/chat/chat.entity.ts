@@ -10,8 +10,14 @@ export class Chat extends BaseEntity<Chat> {
   @Column()
   title: string;
 
+  @Column()
+  description: string;
+
   @ManyToOne(() => User, (user) => user.createdChats)
   creator: User;
+
+  @Column({ default: true })
+  isPublic: boolean;
 
   @ManyToMany(() => User)
   @JoinTable()

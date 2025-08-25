@@ -10,12 +10,12 @@ export class BaseEntity<T> {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @CreateDateColumn({ type: "timestamp", select: false })
+  @CreateDateColumn({ type: "timestamp" })
   createdAt: Date;
 
-  @UpdateDateColumn({ type: "timestamp", select: false })
+  @UpdateDateColumn({ type: "timestamp" })
   updatedAt: Date;
 
-  @DeleteDateColumn({ type: "timestamp", select: false, nullable: true })
+  @DeleteDateColumn({ type: "timestamp", nullable: true })
   deletedAt: Date;
 }

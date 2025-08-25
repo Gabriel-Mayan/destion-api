@@ -1,4 +1,4 @@
-import { Column, Entity, OneToMany } from 'typeorm';
+import { Column, Entity, JoinTable, ManyToMany, OneToMany } from 'typeorm';
 
 import { Chat } from '@modules/chat/chat.entity';
 import { Message } from '@modules/message/message.entity';
@@ -24,4 +24,12 @@ export class User extends BaseEntity<User> {
 
   @OneToMany(() => Chat, (chat) => chat.creator)
   createdChats: Chat[];
+  
+  @ManyToMany(() => User)
+  @JoinTable({
+    name: 'user_friends',
+    joinColumn: { name: 'userId', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'friendId', referencedColumnName: 'id' },
+  })
+  friends: User[];
 }

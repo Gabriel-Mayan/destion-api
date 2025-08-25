@@ -21,11 +21,11 @@ export class UserController {
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateUserDto, @Req() req: AuthenticatedRequest) {
-    return this.userService.update(id, dto, req.user.sub);
+    return this.userService.update(id, dto, req.user.id);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
-    return this.userService.remove(id, req.user.sub);
+    return this.userService.remove(id, req.user.id);
   }
 }

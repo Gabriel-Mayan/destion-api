@@ -1,14 +1,17 @@
-import { IsString, IsUUID, ArrayNotEmpty, ArrayUnique } from 'class-validator';
+import { IsString, IsBoolean, IsOptional, IsUUID } from 'class-validator';
 
 export class CreateChatDto {
   @IsString()
   title: string;
 
-  @IsUUID()
-  creatorId: string;
+  @IsString()
+  @IsOptional()
+  description?: string;
 
-  @ArrayNotEmpty()
-  @ArrayUnique()
-  @IsUUID('all', { each: true })
-  participantIds: string[];
+  @IsUUID()
+  @IsOptional()
+  creatorId: string;
+  
+  @IsBoolean()
+  isPublic: boolean;
 }
