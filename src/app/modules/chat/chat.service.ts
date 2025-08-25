@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
+import { RedisService } from '@infrastructure/redis/redis.service';
+
 import { DateFnsService } from '@shared/datefns/datefns.service';
 
 import { Chat } from './chat.entity';
@@ -14,14 +16,15 @@ export class ChatService {
     private readonly chatRepository: ChatRepository,
     private readonly userRepository: UserRepository,
     private readonly dateFnsService: DateFnsService,
-  ) { }
+    private readonly redisService: RedisService,
+  ) {}
 
-  private formatChatDetails({ entities, raw, userId }: { entities: Chat[]; raw: any[], userId: string }) {
+  private formatChatDetails({ entities, raw, userId }: { entities: Chat[]; raw: any[]; userId: string }) {
     return entities.map((chat, index) => {
       const rawData = raw[index];
 
       const isCreator = chat.creator.id === userId;
-      const isParticipant = chat.participants.some(participant => participant.id === userId);
+      const isParticipant = chat.participants.some((participant) => participant.id === userId);
 
       return {
         id: chat.id,
@@ -52,7 +55,7 @@ export class ChatService {
       creator,
       description: dto.description,
       isPublic: dto.isPublic,
-      participants: [creator]
+      participants: [creator],
     });
 
     return this.chatRepository.save(chat);
@@ -84,13 +87,14 @@ export class ChatService {
       throw new NotFoundException('Chat not found');
     }
 
-    const isAlreadyParticipant = chat.participants.some(p => p.id === user.id);
+    const isAlreadyParticipant = chat.participants.some((p) => p.id === user.id);
 
     if (!isAlreadyParticipant) {
       chat.participants.push(user);
-
       await this.chatRepository.save(chat);
     }
+
+    await this.redisService.addToSet(`chat:${chat.id}:users`, user.id);
 
     return { message: 'Joined successfully', chatId: chat.id };
   }

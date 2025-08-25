@@ -54,7 +54,14 @@ export class AuthService {
 
     const token = await this.jwtService.signAsync({ sub: user.id, email: user.email });
 
-    return { user, token };
+    const formattedUser = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      avatarUrl: user.avatarUrl,
+    }
+
+    return { user: formattedUser, token };
   }
 
   async socialLogin(dto: SocialLoginDto) {
@@ -91,9 +98,9 @@ export class AuthService {
     const recovery = await this.recoveryService.validateToken(dto.recoveryId);
 
     const hashedPassword = await this.cryptoService.encrypt(dto.password);
-    
+
     recovery.user.password = hashedPassword;
-    
+
     await this.userRepository.save(recovery.user);
     await this.recoveryService.markAsUsed(dto.recoveryId);
 

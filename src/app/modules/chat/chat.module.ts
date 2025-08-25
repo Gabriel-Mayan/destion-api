@@ -4,13 +4,14 @@ import { ChatController } from './chat.controller';
 import { ChatRepository } from './chat.repository';
 import { UserRepository } from '../user/user.repository';
 
+import { RedisService } from '@infrastructure/redis/redis.service';
+
 import { AuthGuard } from '@shared/guards/auth.guard';
-import { DateFnsModule } from '@shared/datefns/datefns.module';
 import { DateFnsService } from '@shared/datefns/datefns.service';
 
 @Module({
   controllers: [ChatController],
-  providers: [DateFnsService, ChatService, ChatRepository, UserRepository, AuthGuard],
+  providers: [DateFnsService, ChatService, ChatRepository, UserRepository, AuthGuard, RedisService],
   exports: [ChatService, ChatRepository],
 })
 

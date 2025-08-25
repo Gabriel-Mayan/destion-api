@@ -37,7 +37,6 @@ export class RedisService implements OnModuleDestroy {
 
   async get<T = any>(key: string): Promise<T | null> {
     const value = await this.client.get(key);
-
     return value ? JSON.parse(value) : null;
   }
 
@@ -51,11 +50,19 @@ export class RedisService implements OnModuleDestroy {
 
   async subscribe(channel: string, callback: (message: any) => void): Promise<void> {
     await this.subscriber.subscribe(channel);
-
     this.subscriber.on('message', (ch, message) => {
       if (ch === channel) {
         callback(JSON.parse(message));
       }
     });
+  }
+
+  // helpers para sets (usuarios em salas)
+  async addToSet(key: string, member: string): Promise<void> {
+    await this.client.sadd(key, member);
+  }
+
+  async getSetMembers(key: string): Promise<string[]> {
+    return await this.client.smembers(key);
   }
 }
