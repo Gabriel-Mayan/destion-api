@@ -17,16 +17,24 @@ export class ChatService {
     private readonly dateFnsService: DateFnsService,
   ) { }
 
-  private async formatChatDetails({ entities, raw, userId }: { entities: Chat[]; raw: any[]; userId: string }) {
-    return await Promise.all(entities.map(async (chat, index) => {
-      const rawData = raw[index];
-
-      const creator = { id: rawData.creator_id, name: rawData.creator_name, }
+  private async formatChatDetails({ chats, userId }: { chats: Chat[]; userId: string }) {
+    const formattedChats = await Promise.all(chats.map(async (chat, index) => {
       const isCreator = chat.creator.id === userId;
-     
-      const participants= chat.participants.map((p) => ({ id: p.id, name: p.name }));
+      const creator = { id: chat.creator.id, name: chat.creator.name };
+
+      const participants = chat.participants.map((p) => ({ id: p.id, name: p.name }));
       const isParticipant = chat.participants.some((participant) => participant.id === userId);
-      const lastActivity = this.dateFnsService.formatRelativeTime(rawData.chat_last_activity || chat.createdAt);
+
+      const latestMessage = chat.messages
+        .filter(msg => !msg.deletedAt)
+        .reduce((latest: any, current) => {
+          const latestTime = latest ? Math.max(latest.createdAt.getTime(), latest.updatedAt.getTime()) : 0;
+          const currentTime = Math.max(current.createdAt.getTime(), current.updatedAt.getTime());
+          return currentTime > latestTime ? current : latest;
+        }, null);
+
+
+      const lastActivity = (latestMessage && latestMessage.updatedAt) || chat.updatedAt;
 
       return {
         id: chat.id,
@@ -40,6 +48,13 @@ export class ChatService {
         creator,
         lastActivity,
       };
+    }));
+
+    formattedChats.sort((a, b) => b.lastActivity.getTime() -  a.lastActivity.getTime());
+
+    return formattedChats.map(chat => ({
+      ...chat,
+      lastActivity: this.dateFnsService.formatRelativeTime(chat.lastActivity),
     }));
   }
 
@@ -74,7 +89,7 @@ export class ChatService {
   async findChatByUserId(userId: string) {
     const chats = await this.chatRepository.getUserChatsByUserId({ userId });
 
-    return this.formatChatDetails({ ...chats, userId });
+    return this.formatChatDetails({ chats, userId });
   }
 
   async joinChat(chatId: string, user: User) {

@@ -12,25 +12,18 @@ export class ChatRepository extends Repository<Chat> {
   async getUserChatsByUserId({ userId }: { userId: string }) {
     return await this.createQueryBuilder('chat')
       .leftJoinAndSelect('chat.participants', 'participant')
-      .leftJoin('chat.messages', 'message')
       .leftJoin('chat.creator', 'creator')
+      .leftJoinAndSelect('chat.messages', 'messages')
       .addSelect('creator.id')
       .addSelect('creator.name')
-      .addSelect(subQuery =>
-        subQuery
-          .select('MAX(message.createdAt)', 'lastActivity')
-          .from('message', 'message')
-          .where('message.chatId = chat.id'),
-        'chat_last_activity',
-      )
       .where('participant.id = :userId OR creator.id = :userId OR chat.isPublic = true', { userId })
-      .getRawAndEntities();
+      .getMany();
   }
 
   getChatDetails({ chatId }: { chatId: string }) {
-    // TODO Corrigir essa query
     return this.findOne({
       where: { id: chatId },
+      order: { messages: { createdAt: "ASC" } },
       relations: ['creator', 'participants', 'messages', 'messages.sender'],
     });
   }
