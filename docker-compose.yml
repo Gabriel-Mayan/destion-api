@@ -41,8 +41,9 @@ services:
     container_name: destion-api
     build:
       context: .
+      dockerfile: Dockerfile.api
     ports:
-      - "3000:3000"
+      - "8080:8080"
     env_file:
       - .env
     depends_on:
@@ -54,4 +55,15 @@ services:
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules
-    command: yarn dev
+    command: yarn start:prod
+
+  front:
+    container_name: destion-front
+    build:
+      context: .
+      dockerfile: Dockerfile.front
+    ports:
+      - "3000:3000"
+    networks:
+      - destion
+    restart: unless-stopped
