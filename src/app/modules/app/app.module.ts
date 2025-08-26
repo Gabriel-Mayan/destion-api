@@ -31,7 +31,7 @@ import { AppController } from './app.controller';
     MiddlewaresModule,
     RedisModule,
     SocketModule,
-    PingModule,
+    // PingModule,
     EmailModule,
     SentryModule,
     RecoveryPasswordModule,

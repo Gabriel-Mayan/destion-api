@@ -64,4 +64,12 @@ export class RedisService implements OnModuleDestroy {
   async getSetMembers(key: string): Promise<string[]> {
     return await this.client.smembers(key);
   }
+
+  getPubClient(): Redis {
+    return this.client.duplicate();
+  }
+
+  getSubClient(): Redis {
+    return this.subscriber.duplicate();
+  }
 }
