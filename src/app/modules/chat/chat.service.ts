@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { User } from '@modules/user/user.entity';
 
@@ -8,6 +8,7 @@ import { Chat } from './chat.entity';
 import { ChatRepository } from './chat.repository';
 import { UserRepository } from '../user/user.repository';
 import { CreateChatDto } from './dto/create-chat.dto';
+import { UpdateChatDto } from './dto/update-chat.dto';
 
 @Injectable()
 export class ChatService {
@@ -50,7 +51,7 @@ export class ChatService {
       };
     }));
 
-    formattedChats.sort((a, b) => b.lastActivity.getTime() -  a.lastActivity.getTime());
+    formattedChats.sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime());
 
     return formattedChats.map(chat => ({
       ...chat,
@@ -77,7 +78,7 @@ export class ChatService {
   }
 
   async findChatById(id: string): Promise<Chat> {
-    const chat = await this.chatRepository.getChatDetails({ chatId: id });
+    const chat = await this.chatRepository.findOneBy({ id });
 
     if (!chat) {
       throw new NotFoundException('Chat not found');
@@ -109,6 +110,46 @@ export class ChatService {
       await this.chatRepository.save(chat);
     }
 
-    return await this.findChatById(chatId);
+    const chatDetails = await this.chatRepository.getChatDetails({ chatId });
+
+    if (!chatDetails) {
+      throw new NotFoundException('Chat not found');
+    }
+
+    return chat;
+  }
+
+  async updateChat(id: string, dto: UpdateChatDto, userId: string): Promise<Chat> {
+    const chat = await this.chatRepository.findOne({ where: { id }, relations: ['creator'] });
+
+    if (!chat) {
+      throw new NotFoundException('Chat not found');
+    }
+
+    if (chat.creator.id !== userId) {
+      throw new ForbiddenException('Not allowed to edit this chat');
+    }
+
+    chat.title = dto.title ?? chat.title;
+    chat.description = dto.description ?? chat.description;
+    chat.isPublic = dto.isPublic ?? chat.isPublic;
+
+    return await this.chatRepository.save(chat);
+  }
+
+  async deleteChat(id: string, userId: string): Promise<{ success: boolean }> {
+    const chat = await this.chatRepository.findOne({ where: { id }, relations: ['creator'] });
+
+    if (!chat) {
+      throw new NotFoundException('Chat not found');
+    }
+
+    if (chat.creator.id !== userId) {
+      throw new ForbiddenException('Not allowed to edit this chat');
+    }
+
+    await this.chatRepository.remove(chat);
+
+    return { success: true };
   }
 }
