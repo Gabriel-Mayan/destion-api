@@ -116,7 +116,7 @@ export class ChatService {
       throw new NotFoundException('Chat not found');
     }
 
-    return chat;
+    return chatDetails;
   }
 
   async updateChat(id: string, dto: UpdateChatDto, userId: string): Promise<Chat> {

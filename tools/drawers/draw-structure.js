@@ -1,10 +1,12 @@
 const fs = require('fs');
 const path = require('path');
 
-function drawFolderStructure(dirPath, prefix = '') {
+function drawFolderStructure(dirPath, prefix = '', ignore = ['dist', 'node_modules', '.git']) {
   const items = fs.readdirSync(dirPath);
 
   items.forEach((item, index) => {
+    if (ignore.includes(item)) return;
+
     const isLast = index === items.length - 1;
     const itemPath = path.join(dirPath, item);
     const stats = fs.statSync(itemPath);
@@ -14,12 +16,12 @@ function drawFolderStructure(dirPath, prefix = '') {
 
     if (stats.isDirectory()) {
       const newPrefix = prefix + (isLast ? '    ' : '│   ');
-      drawFolderStructure(itemPath, newPrefix);
+      drawFolderStructure(itemPath, newPrefix, ignore);
     }
   });
 }
 
-// Caminho para o src
-const srcPath = path.resolve(__dirname, '../../src');
+// Caminho para o projeto
+const srcPath = path.resolve(__dirname, '../../');
 console.log('src');
 drawFolderStructure(srcPath);
