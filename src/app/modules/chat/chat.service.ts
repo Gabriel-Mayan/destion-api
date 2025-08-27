@@ -18,7 +18,7 @@ export class ChatService {
     const participants = chat.participants.map((p) => ({ id: p.id, name: p.name }));
     const isParticipant = chat.participants.some((participant) => participant.id === userId);
 
-    const latestMessage = chat.messages.reduce((latest: any, current) => {
+    const latestMessage = chat.messages && chat.messages.length && chat.messages.reduce((latest: any, current) => {
       const currentActivity = current.deletedAt
         ? current.deletedAt.getTime()
         : current.updatedAt.getTime();
@@ -61,7 +61,11 @@ export class ChatService {
       participants: [creator],
     });
 
-    return await this.chatRepository.save(chat);
+    const newChat = await this.chatRepository.save(chat);
+
+    const chatDetails = await this.chatRepository.getChatDetails({ id: newChat.id });
+
+    return this.formatChatDetails(chatDetails!, creator.id);
   }
 
   async findChatById(chatId: string) {
@@ -84,8 +88,8 @@ export class ChatService {
     return formattedChats;
   }
 
-  async updateChat(chatId: string, dto: UpdateChatDto, userId: string): Promise<Chat> {
-    const chat = await this.chatRepository.getChatWithCreator({ id: chatId });
+  async updateChat(chatId: string, dto: UpdateChatDto, userId: string) {
+    const chat = await this.chatRepository.getChatDetails({ id: chatId });
 
     if (!chat) {
       throw new NotFoundException('Chat not found');
@@ -99,7 +103,9 @@ export class ChatService {
     chat.description = dto.description ?? chat.description;
     chat.isPublic = dto.isPublic ?? chat.isPublic;
 
-    return await this.chatRepository.save(chat);
+    await this.chatRepository.save(chat);
+
+    return this.formatChatDetails(chat, chat.creator.id);
   }
 
   async deleteChat(chatId: string, userId: string): Promise<{ success: boolean }> {

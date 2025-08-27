@@ -12,11 +12,20 @@ import { UpdateChatDto } from './dto/update-chat.dto';
 @Controller('chats')
 @UseGuards(AuthGuard)
 export class ChatController {
-  constructor(private readonly chatService: ChatService, private readonly socketGateway: SocketGateway) {}
+  constructor(private readonly chatService: ChatService, private readonly socketGateway: SocketGateway) { }
 
   @Post()
-  create(@Body() dto: CreateChatDto, @Req() req: AuthenticatedRequest) {
-    return this.chatService.createChat(dto, req.user);
+  async create(@Body() dto: CreateChatDto, @Req() req: AuthenticatedRequest) {
+    const createdChat = await this.chatService.createChat(dto, req.user);
+
+    if (createdChat.isPublic) {
+      this.socketGateway.server.emit('chat', {
+        type: 'created',
+        data: createdChat,
+      });
+    }
+
+    return createdChat;
   }
 
   @Get('me')
@@ -31,12 +40,27 @@ export class ChatController {
 
   @Patch(':id')
   async updateChat(@Param('id') id: string, @Body() dto: UpdateChatDto, @Req() req: AuthenticatedRequest) {
-    return await this.chatService.updateChat(id, dto, req.user.id);
+    const updatedChat = await this.chatService.updateChat(id, dto, req.user.id);
+
+    this.socketGateway.server.to(id).emit('chat', {
+      type: 'updated',
+      chatId: id,
+      data: updatedChat,
+    });
+
+    return updatedChat;
   }
 
   @Delete(':id')
   async deleteChat(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
-    return await this.chatService.deleteChat(id, req.user.id);
+    await this.chatService.deleteChat(id, req.user.id);
+
+    this.socketGateway.server.to(id).emit('chat', {
+      type: 'deleted',
+      chatId: id,
+    });
+
+    return { success: true };
   }
 
   @Post(':id/join')
@@ -44,6 +68,7 @@ export class ChatController {
     const result = await this.chatService.joinChat(chatId, req.user);
 
     const socket = this.socketGateway.server.sockets.sockets.get(`user:${req.user.id}`);
+
     if (socket) {
       this.socketGateway.addUserToRoom(socket, chatId);
     }
