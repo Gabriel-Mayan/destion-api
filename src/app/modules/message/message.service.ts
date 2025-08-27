@@ -12,9 +12,12 @@ import { UpdateMessageDto } from './dto/update-message.dto';
 export class MessageService {
   constructor(private readonly chatRepository: ChatRepository, private readonly messageRepository: MessageRepository,) { }
 
-  async sendMessage(dto: SendMessageDto, user: User): Promise<Message> {
+  async sendMessage(dto: SendMessageDto, user: User) {
     const chat = await this.chatRepository.getChatDetails({ id: dto.chatId });
-    if (!chat) throw new NotFoundException('Chat not found');
+
+    if (!chat) {
+      throw new NotFoundException('Chat not found');
+    }
 
     if (!chat.participants.find((p) => p.id === user.id)) {
       throw new ForbiddenException('User does not participate in chat');
@@ -29,11 +32,8 @@ export class MessageService {
     return this.messageRepository.save(message);
   }
 
-  async updateMessage(dto: UpdateMessageDto, user: User): Promise<Message> {
-    const message = await this.messageRepository.findOne({
-      where: { id: dto.messageId },
-      relations: ['chat', 'sender'],
-    });
+  async updateMessage(dto: UpdateMessageDto, user: User) {
+    const message = await this.messageRepository.getMessageWithSenderAndChat({ id: dto.messageId });
 
     if (!message) {
       throw new NotFoundException('Message not found');
@@ -48,11 +48,8 @@ export class MessageService {
     return this.messageRepository.save(message);
   }
 
-  async deleteMessage(messageId: string, user: User): Promise<Message> {
-    const message = await this.messageRepository.findOne({
-      where: { id: messageId },
-      relations: ['chat', 'sender'],
-    });
+  async deleteMessage(messageId: string, user: User) {
+    const message = await this.messageRepository.getMessageWithSenderAndChat({ id: messageId });
 
     if (!message) {
       throw new NotFoundException('Message not found');
@@ -62,7 +59,7 @@ export class MessageService {
       throw new ForbiddenException('You can only delete your own messages');
     }
 
-    await this.messageRepository.remove(message);
+    await this.messageRepository.softDelete(message.id);
 
     return message;
   }

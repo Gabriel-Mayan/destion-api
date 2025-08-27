@@ -49,7 +49,7 @@ export class MessageController {
     this.socketGateway.server.to(deletedMessage.chat.id).emit('message', {
       type: 'deleted',
       chatId: deletedMessage.chat.id,
-      messageId: id,
+      message: { ...deletedMessage, content: "", deletedAt: new Date() },
     });
 
     return { success: true };

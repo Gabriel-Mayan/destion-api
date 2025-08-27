@@ -139,6 +139,6 @@ export class ChatService {
       await this.chatRepository.save(chat);
     }
 
-    return this.chatRepository.getChatDetails({ id: chatId });
+    return await this.chatRepository.getChatDetails({ id: chatId });
   }
 }
