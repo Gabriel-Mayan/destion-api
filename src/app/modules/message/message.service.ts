@@ -13,7 +13,7 @@ export class MessageService {
   constructor(private readonly chatRepository: ChatRepository, private readonly messageRepository: MessageRepository,) { }
 
   async sendMessage(dto: SendMessageDto, user: User): Promise<Message> {
-    const chat = await this.chatRepository.getChatDetails({ chatId: dto.chatId });
+    const chat = await this.chatRepository.getChatDetails({ id: dto.chatId });
     if (!chat) throw new NotFoundException('Chat not found');
 
     if (!chat.participants.find((p) => p.id === user.id)) {

@@ -9,22 +9,30 @@ export class ChatRepository extends Repository<Chat> {
     super(Chat, dataSource.createEntityManager());
   }
 
-  async getUserChatsByUserId({ userId }: { userId: string }) {
+  async listUserChatsByUserId({ userId }: { userId: string }) {
     return await this.createQueryBuilder('chat')
       .leftJoinAndSelect('chat.participants', 'participant')
       .leftJoin('chat.creator', 'creator')
       .leftJoinAndSelect('chat.messages', 'messages')
       .addSelect('creator.id')
       .addSelect('creator.name')
-      .where('participant.id = :userId OR creator.id = :userId OR chat.isPublic = true', { userId })
+      .where('(participant.id = :userId OR creator.id = :userId OR chat.isPublic = true)', { userId })
+      .andWhere('chat.deletedAt IS NULL')
       .getMany();
   }
 
-  getChatDetails({ chatId }: { chatId: string }) {
-    return this.findOne({
-      where: { id: chatId },
+  async getChatDetails({ id }: Pick<Chat, "id">) {
+    return await this.findOne({
+      where: { id },
       order: { messages: { createdAt: "ASC" } },
       relations: ['creator', 'participants', 'messages', 'messages.sender'],
+    });
+  }
+
+  async getChatWithCreator({ id }: Pick<Chat, "id">) {
+    return await this.findOne({
+      where: { id },
+      relations: ['creator'],
     });
   }
 }

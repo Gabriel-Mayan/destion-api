@@ -1,11 +1,13 @@
 import { Controller, Post, Get, Param, Body, UseGuards, Req, Patch, Delete } from '@nestjs/common';
+
+import { SocketGateway } from '@infrastructure/socket/socket.gateway';
+
 import { AuthGuard } from '@shared/guards/auth.guard';
 import { AuthenticatedRequest } from '@shared/interfaces/authenticated-request.interface';
 
 import { ChatService } from './chat.service';
 import { CreateChatDto } from './dto/create-chat.dto';
 import { UpdateChatDto } from './dto/update-chat.dto';
-import { SocketGateway } from '@infrastructure/socket/socket.gateway';
 
 @Controller('chats')
 @UseGuards(AuthGuard)
@@ -14,13 +16,12 @@ export class ChatController {
 
   @Post()
   create(@Body() dto: CreateChatDto, @Req() req: AuthenticatedRequest) {
-    dto.creatorId = req.user.id;
-    return this.chatService.createChat(dto);
+    return this.chatService.createChat(dto, req.user);
   }
 
   @Get('me')
   async findMyChats(@Req() req: AuthenticatedRequest) {
-    return await this.chatService.findChatByUserId(req.user.id);
+    return await this.chatService.listChatsByUserId(req.user.id);
   }
 
   @Get(':id')

@@ -7,10 +7,6 @@ export class CreateChatDto {
   @IsString()
   @IsOptional()
   description?: string;
-
-  @IsUUID()
-  @IsOptional()
-  creatorId: string;
   
   @IsBoolean()
   isPublic: boolean;

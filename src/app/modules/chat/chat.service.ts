@@ -2,83 +2,70 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 
 import { User } from '@modules/user/user.entity';
 
-import { DateFnsService } from '@shared/datefns/datefns.service';
-
 import { Chat } from './chat.entity';
 import { ChatRepository } from './chat.repository';
-import { UserRepository } from '../user/user.repository';
 import { CreateChatDto } from './dto/create-chat.dto';
 import { UpdateChatDto } from './dto/update-chat.dto';
 
 @Injectable()
 export class ChatService {
-  constructor(
-    private readonly chatRepository: ChatRepository,
-    private readonly userRepository: UserRepository,
-    private readonly dateFnsService: DateFnsService,
-  ) { }
+  constructor(private readonly chatRepository: ChatRepository) { }
 
-  private async formatChatDetails({ chats, userId }: { chats: Chat[]; userId: string }) {
-    const formattedChats = await Promise.all(chats.map(async (chat, index) => {
-      const isCreator = chat.creator.id === userId;
-      const creator = { id: chat.creator.id, name: chat.creator.name };
+  private formatChatDetails(chat: Chat, userId: string) {
+    const isCreator = chat.creator.id === userId;
+    const creator = { id: chat.creator.id, name: chat.creator.name };
 
-      const participants = chat.participants.map((p) => ({ id: p.id, name: p.name }));
-      const isParticipant = chat.participants.some((participant) => participant.id === userId);
+    const participants = chat.participants.map((p) => ({ id: p.id, name: p.name }));
+    const isParticipant = chat.participants.some((participant) => participant.id === userId);
 
-      const latestMessage = chat.messages
-        .filter(msg => !msg.deletedAt)
-        .reduce((latest: any, current) => {
-          const latestTime = latest ? Math.max(latest.createdAt.getTime(), latest.updatedAt.getTime()) : 0;
-          const currentTime = Math.max(current.createdAt.getTime(), current.updatedAt.getTime());
-          return currentTime > latestTime ? current : latest;
-        }, null);
+    const latestMessage = chat.messages.reduce((latest: any, current) => {
+      const currentActivity = current.deletedAt
+        ? current.deletedAt.getTime()
+        : current.updatedAt.getTime();
 
+      if (!latest) return current;
 
-      const lastActivity = (latestMessage && latestMessage.updatedAt) || chat.updatedAt;
+      const latestActivity = latest.deletedAt
+        ? latest.deletedAt.getTime()
+        : latest.updatedAt.getTime();
 
-      return {
-        id: chat.id,
-        name: chat.title,
-        isPublic: chat.isPublic,
-        description: chat.description,
-        membersCount: chat.participants.length,
-        isCreator,
-        participants,
-        isParticipant,
-        creator,
-        lastActivity,
-      };
-    }));
+      return currentActivity > latestActivity ? current : latest;
+    }, null);
 
-    formattedChats.sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime());
+    const chatActivity = chat.updatedAt.getTime();
+    const latestMessageActivity = latestMessage ? (latestMessage.deletedAt?.getTime() ?? latestMessage.updatedAt.getTime()) : null;
 
-    return formattedChats.map(chat => ({
-      ...chat,
-      lastActivity: this.dateFnsService.formatRelativeTime(chat.lastActivity),
-    }));
+    const mostRecentActivity = latestMessageActivity ? Math.max(latestMessageActivity, chatActivity) : chatActivity;
+    const lastActivity = new Date(mostRecentActivity);
+
+    return {
+      id: chat.id,
+      name: chat.title,
+      isPublic: chat.isPublic,
+      description: chat.description,
+      membersCount: chat.participants.length,
+      creator,
+      isCreator,
+      participants,
+      isParticipant,
+      lastActivity,
+    };
   }
 
-  async createChat(dto: CreateChatDto): Promise<Chat> {
-    const creator = await this.userRepository.findOne({ where: { id: dto.creatorId } });
-
-    if (!creator) {
-      throw new NotFoundException('Creator not found');
-    }
-
+  async createChat(dto: CreateChatDto, creator: User) {
     const chat = this.chatRepository.create({
-      title: dto.title,
       creator,
+      title: dto.title,
       description: dto.description,
       isPublic: dto.isPublic,
       participants: [creator],
     });
 
-    return this.chatRepository.save(chat);
+    return await this.chatRepository.save(chat);
   }
 
-  async findChatById(id: string): Promise<Chat> {
-    const chat = await this.chatRepository.findOneBy({ id });
+  async findChatById(chatId: string) {
+    const chat = await this.chatRepository.findOneBy({ id: chatId });
 
     if (!chat) {
       throw new NotFoundException('Chat not found');
@@ -87,40 +74,18 @@ export class ChatService {
     return chat;
   }
 
-  async findChatByUserId(userId: string) {
-    const chats = await this.chatRepository.getUserChatsByUserId({ userId });
+  async listChatsByUserId(userId: string) {
+    const chats = await this.chatRepository.listUserChatsByUserId({ userId });
 
-    return this.formatChatDetails({ chats, userId });
+    const formattedChats = chats.map(chat => this.formatChatDetails(chat, userId));
+
+    formattedChats.sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime());
+
+    return formattedChats;
   }
 
-  async joinChat(chatId: string, user: User) {
-    const chat = await this.chatRepository.findOne({
-      where: { id: chatId },
-      relations: ['participants'],
-    });
-
-    if (!chat) {
-      throw new NotFoundException('Chat not found');
-    }
-
-    const isAlreadyParticipant = chat.participants.some((p) => p.id === user.id);
-
-    if (!isAlreadyParticipant) {
-      chat.participants.push(user);
-      await this.chatRepository.save(chat);
-    }
-
-    const chatDetails = await this.chatRepository.getChatDetails({ chatId });
-
-    if (!chatDetails) {
-      throw new NotFoundException('Chat not found');
-    }
-
-    return chatDetails;
-  }
-
-  async updateChat(id: string, dto: UpdateChatDto, userId: string): Promise<Chat> {
-    const chat = await this.chatRepository.findOne({ where: { id }, relations: ['creator'] });
+  async updateChat(chatId: string, dto: UpdateChatDto, userId: string): Promise<Chat> {
+    const chat = await this.chatRepository.getChatWithCreator({ id: chatId });
 
     if (!chat) {
       throw new NotFoundException('Chat not found');
@@ -137,8 +102,8 @@ export class ChatService {
     return await this.chatRepository.save(chat);
   }
 
-  async deleteChat(id: string, userId: string): Promise<{ success: boolean }> {
-    const chat = await this.chatRepository.findOne({ where: { id }, relations: ['creator'] });
+  async deleteChat(chatId: string, userId: string): Promise<{ success: boolean }> {
+    const chat = await this.chatRepository.getChatWithCreator({ id: chatId });
 
     if (!chat) {
       throw new NotFoundException('Chat not found');
@@ -148,8 +113,26 @@ export class ChatService {
       throw new ForbiddenException('Not allowed to edit this chat');
     }
 
-    await this.chatRepository.remove(chat);
+    await this.chatRepository.softDelete(chatId);
 
     return { success: true };
+  }
+
+  async joinChat(chatId: string, user: User) {
+    const chat = await this.chatRepository.getChatDetails({ id: chatId });
+
+    if (!chat) {
+      throw new NotFoundException('Chat not found');
+    }
+
+    const isAlreadyParticipant = chat.participants.some((p) => p.id === user.id);
+
+    if (!isAlreadyParticipant) {
+      chat.participants.push(user);
+
+      await this.chatRepository.save(chat);
+    }
+
+    return this.chatRepository.getChatDetails({ id: chatId });
   }
 }
